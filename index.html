@@ -2,6 +2,7 @@
 <html lang="">
 
 <head>
+  <link rel="stylesheet" href="style.css">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dom Dom Dom</title>
@@ -15,18 +16,19 @@
 </head>
 
 <body>
-  <div class="container">
+  <div id="container">
+    <h1>Star Shooters</h1>
     <div id="gameInfo">
       <div id="scores"></div>
       <div id="gamecanvas">
       </div>
-     <div id ="colorTheme">
-      <input type = "radio" name ="theme" value ="dark" id ="dark"> 
-      <label for = "dark">Dark Mode</label>
-      <input type = "radio" name ="theme" value ="light" id ="light">  
-      <label for = "light">Light Mode</label>
+      <div id="colorTheme">
+        <input type="radio" name="theme" value="dark" id="dark" checked ="true">
+        <label for="dark">Dark Mode</label>
+        <input type="radio" name="theme" value="light" id="light">
+        <label for="light">Light Mode</label>
 
-     </div> 
+      </div>
     </div>
   </div>
   <script src="p5.js"></script>
