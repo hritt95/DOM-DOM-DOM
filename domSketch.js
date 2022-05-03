@@ -8,6 +8,11 @@ let lasers;
 let enemies;
 let round;
 let gameIsLive;
+let playerScore;
+let enemiesRemaining;
+let lastFired;
+let livesLeft;
+let fade;
 
 function setup() {
     createCanvas(800, 500).parent("gamecanvas");
@@ -20,6 +25,16 @@ function setup() {
 
     enemies = [];
 
+    playerScore = 0;
+
+    enemiesRemaining = 0;
+
+    lastFired = second();
+
+    livesLeft = 3;
+
+    fade = 0
+
     //Style the game container
     let gameInfo = select("#gameInfo");
     gameInfo.style("width", "800px");
@@ -31,19 +46,31 @@ function setup() {
     scoreDiv.style("padding", "10px")
     scoreDiv.style("justify-content", "space-between");
 
+    //Create a div for the score & livesLeft
+
+    let scoreAndLives = createElement("div");
+    let livesLeftDiv = createElement("div", "Lives Left: " + livesLeft);
+    livesLeftDiv.id("livesLeft");
+    scoreAndLives.id("livesScore");
+
+
+
     //Create H3 for the score and highscore and append using parent
 
     let score = createElement("h3", "Score:");
     score.id("score");
-    score.parent("scores");
+    score.parent("livesScore");
+    livesLeftDiv.parent("livesScore");
+    scoreAndLives.parent("scores");
     let highScore = createElement("h3", "High Score:");
     highScore.id("highScore");
     highScore.parent("scores");
 
     //Create and style span elements for the scores
-    let scoreSpan = createElement("span", "0");
+    let scoreSpan = createElement("span", playerScore);
+    scoreSpan.id("playerScore");
     scoreSpan.style("margin-left", "10px");
-    let highScoreSpan = createElement("span", "0");
+    let highScoreSpan = createElement("span", loadHighScore());
     highScoreSpan.style("margin-left", "10px");
     scoreSpan.parent("score");
     highScoreSpan.parent("highScore");
@@ -101,21 +128,53 @@ function keyPressed() {
             console.log("gamesIsLive")
             lasers.push({
                 x: playerXpos + 30,
-                y: 440
+                y: 440,
+                hit: false
             })
         }
+    } else if (keyCode == ENTER && gameIsLive == false) {
+        console.log("enterPressed")
+        startRound()
+        gameIsLive = true;
 
     }
 
 }
 
+function saveHighScore() {
+    //check the current high score
+    let currentHighScore = localStorage.getItem("starShooterScore");
+    if (currentHighScore != null) {
+        console.log("score", playerScore)
+        console.log("currentHighScore", currentHighScore)
+        if (playerScore > Number(currentHighScore)){
+            localStorage.setItem("starShooterScore", playerScore)
+            alert("Congrat you got the high score!")
+        }
+    } else {
+        localStorage.setItem("starShooterScore", playerScore)
+        alert("Congrat you got the high score!")
+    }
+}
+
+function loadHighScore(){
+    let currentHighScore = localStorage.getItem("starShooterScore");
+    if( currentHighScore != null){
+        return currentHighScore;
+    }
+    return 0
+
+}
 function drawPlayerLasers() {
     for (i = 0; i < lasers.length; i++) {
-        push()
-        stroke(139, 0, 0);
-        strokeWeight(5);
-        line(lasers[i].x, lasers[i].y - 20, lasers[i].x, lasers[i].y);
-        pop()
+        if (lasers[i].hit == false) {
+            push()
+            stroke(139, 0, 0);
+            strokeWeight(5);
+            line(lasers[i].x, lasers[i].y - 20, lasers[i].x, lasers[i].y);
+            pop()
+        }
+
         lasers[i].y -= 2;
     }
 }
@@ -123,16 +182,31 @@ function drawPlayerLasers() {
 function startGame() {
     startRound();
     drawPlayerLasers();
+    addEnemyLasers();
     drawEnemies();
 }
 
 function startRound() {
+    enemiesRemaining = round;
     for (let i = 0; i < round; i++) {
         enemies.push({
             x: 30 + (i * 100),
             y: 50,
-            hit: false
+            hit: false,
+            movingRight: true,
+            movingLeft: false,
+            leftLimit: (i * 100) - 70,
+            rightLimit: (i * 100) + 130,
+            lasers: [],
         })
+    }
+}
+
+function endRound() {
+    if (enemiesRemaining == 0) {
+        round += 1;
+        startRound();
+
     }
 }
 
@@ -143,46 +217,158 @@ function drawEnemies() {
             fill(0);
             circle(enemies[i].x, enemies[i].y, 30);
             pop()
+            let enemy = enemies[i];
+            for (let j = 0; j < enemy.lasers.length; j++) {
+                let enemyLaser = enemy.lasers[j];
+                if (enemyLaser.hit == false) {
+                    push()
+                    stroke(0, 255, 0);
+                    strokeWeight(5);
+                    line(enemyLaser.x, enemyLaser.y, enemyLaser.x, enemyLaser.y + 20);
+                    pop()
+                    enemyLaser.y += 2;
+                }
+            }
+        }
+        if (enemies[i].movingRight == true) {
+            enemies[i].x += 3
+        } else {
+            enemies[i].x -= 3
+        }
+        if (enemies[i].x < enemies[i].leftLimit) {
+            enemies[i].movingRight = true
+            enemies[i].movingLeft = false
+        }
+        if (enemies[i].x > enemies[i].rightLimit) {
+            enemies[i].movingRight = false
+            enemies[i].movingLeft = true
         }
     }
 }
 
-function checkEnemiesHit(){
-//make arrays of unhit enemeies and unhit lasers
-    //loop through the laser array
-        //loop through the enemie's array 
-        // check if the x and y pos of current enemey is the same  as x and y pos of current laser 
-            // if yes then you hit the enemey so update it to be hit true and laser both should be true 
-             // increae score on hit 
+function checkEnemiesHit() {
+    const unhitEnemies = enemies.filter(function (enemy) {
+        return enemy.hit == false
+    })
+    const unhitLasers = lasers.filter(function (laser) {
+        return laser.hit == false
+    })
+    for (let i = 0; i < unhitLasers.length; i++) {
+        const laser = unhitLasers[i]
+        const laserTop = laser.y - 20
+        for (let j = 0; j < unhitEnemies.length; j++) {
+            const enemy = unhitEnemies[j]
+            const enemyLeft = enemy.x - 15
+            const enemyRight = enemy.x + 15
+            const enemyTop = enemy.y - 15
+            const enemyBottom = enemy.y + 15
+            if ((laser.x > enemyLeft && laser.x < enemyRight) && (laserTop > enemyTop && laserTop < enemyBottom)) {
+                enemy.hit = true
+                laser.hit = true
+                playerScore += 1
+                select("#playerScore").html(playerScore)
+                enemiesRemaining -= 1
+
+            }
+        }
+
+    }
+
+
+
+
 }
+
+function checkPlayerHit() {
+    for (i = 0; i < enemies.length; i++) {
+        let enemy = enemies[i];
+        for (j = 0; j < enemy.lasers.length; j++) {
+            let enemyLaser = enemy.lasers[j];
+            if ((enemyLaser.x > playerXpos && enemyLaser.x < playerXpos + 60) && (enemyLaser.y + 20 > 440 && enemyLaser.y < height) && enemyLaser.hit == false) {
+                livesLeft -= 1
+                select("#livesLeft").html("Lives Left: " + livesLeft);
+                enemyLaser.hit = true
+                console.log("livesLeft", livesLeft);
+            }
+        }
+
+    }
+}
+
+function checkGameOver() {
+    if (livesLeft < 1) {
+        console.log("gameover")
+        if (fade < 255) {
+            push()
+            textSize(60);
+            fill(255, 0, 0, fade);
+            text("GAME OVER", 200, 200);
+            pop()
+            fade += 10
+        } else {
+            push()
+            textSize(60);
+            fill(255, 0, 0, fade);
+            text("GAME OVER", 200, 200);
+            pop()
+            saveHighScore()
+            let playAgain = confirm("Do you want to play again?");
+            if (playAgain == true){
+                location.reload();
+            }
+            noLoop();
+        }
+        
+
+    }
+}
+
+function addEnemyLasers() {
+    for (let i = 0; i < enemies.length; i++) {
+        let enemy = enemies[i];
+        if (enemy.hit == false) {
+            enemy.lasers.push({
+                x: enemy.x,
+                y: enemy.y + 15,
+                hit: false
+            })
+
+        }
+
+
+    }
+}
+
 
 function draw() {
     background(backgroundColor);
     defineCharacter(playerXpos);
-    if (gameIsLive === false) {
-        startGame();
-        gameIsLive = true;
-    } else {
+    if (gameIsLive === true) {
+
         drawEnemies();
         drawPlayerLasers();
+        checkEnemiesHit();
+        checkPlayerHit();
+        checkGameOver();
+        endRound();
+        if (second() - lastFired >= 2) {
+            addEnemyLasers();
+            lastFired = second();
+        }
+
     }
 
 }
+
 
 
 
 // Javscript not on canvas 
 
 
-//track the user lives left 
-// track the score 
-// when the enemy his a user they lose a life 
-// after every enemy hit check if there are no lives left 
-//if no lives are let game is over 
-//when user hist an enemy a point is given to a user 
-// after every enemy is hit have to check how many points there are 
-// If target points are reached win or go to next level 
+// add sound effects 
 
-
-//Need to think about make a function for the enemy lasers 
-//
+// add High Score
+// Display prompt for initals for aftergame over 
+// When the game loads grab the high scores form local storage 
+// Show the hgighest score
