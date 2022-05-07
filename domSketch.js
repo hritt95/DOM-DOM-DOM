@@ -13,13 +13,14 @@ let enemiesRemaining;
 let lastFired;
 let livesLeft;
 let fade;
-
+let interval;
 function setup() {
     createCanvas(800, 500).parent("gamecanvas");
     backgroundColor = color(46, 26, 71);
     gameIsLive = false;
     round = 1;
     playerXpos = 370;
+    interval = setInterval(addEnemyLasers, 2000);
 
     lasers = [];
 
@@ -84,7 +85,6 @@ function setup() {
 }
 
 function changeMode(event) {
-    //console.log(event.target.id);
     let value = select("#" + event.target.id).value();
     if (value == "dark") {
         backgroundColor = color(46, 26, 71)
@@ -116,16 +116,13 @@ function defineCharacter(x_pos) {
 }
 
 function keyPressed() {
-    console.log('keyPressed')
     if (keyCode === LEFT_ARROW) {
         playerXpos = playerXpos >= 30 ? playerXpos - 30 : playerXpos
     } else if (keyCode === RIGHT_ARROW) {
         playerXpos = playerXpos <= 720 ? playerXpos + 30 : playerXpos
 
     } else if (keyCode == "32") {
-        console.log("spacePressed");
         if (gameIsLive) {
-            console.log("gamesIsLive")
             lasers.push({
                 x: playerXpos + 30,
                 y: 440,
@@ -133,7 +130,6 @@ function keyPressed() {
             })
         }
     } else if (keyCode == ENTER && gameIsLive == false) {
-        console.log("enterPressed")
         startRound()
         gameIsLive = true;
 
@@ -142,12 +138,9 @@ function keyPressed() {
 }
 
 function saveHighScore() {
-    //check the current high score
     let currentHighScore = localStorage.getItem("starShooterScore");
     if (currentHighScore != null) {
-        console.log("score", playerScore)
-        console.log("currentHighScore", currentHighScore)
-        if (playerScore > Number(currentHighScore)){
+        if (playerScore > Number(currentHighScore)) {
             localStorage.setItem("starShooterScore", playerScore)
             alert("Congrat you got the high score!")
         }
@@ -157,14 +150,15 @@ function saveHighScore() {
     }
 }
 
-function loadHighScore(){
+function loadHighScore() {
     let currentHighScore = localStorage.getItem("starShooterScore");
-    if( currentHighScore != null){
+    if (currentHighScore != null) {
         return currentHighScore;
     }
     return 0
 
 }
+
 function drawPlayerLasers() {
     for (i = 0; i < lasers.length; i++) {
         if (lasers[i].hit == false) {
@@ -288,7 +282,6 @@ function checkPlayerHit() {
                 livesLeft -= 1
                 select("#livesLeft").html("Lives Left: " + livesLeft);
                 enemyLaser.hit = true
-                console.log("livesLeft", livesLeft);
             }
         }
 
@@ -297,7 +290,6 @@ function checkPlayerHit() {
 
 function checkGameOver() {
     if (livesLeft < 1) {
-        console.log("gameover")
         if (fade < 255) {
             push()
             textSize(60);
@@ -312,30 +304,35 @@ function checkGameOver() {
             text("GAME OVER", 200, 200);
             pop()
             saveHighScore()
+            clearInterval(interval);
             let playAgain = confirm("Do you want to play again?");
-            if (playAgain == true){
+            if (playAgain == true) {
                 location.reload();
             }
             noLoop();
         }
-        
+
 
     }
 }
 
 function addEnemyLasers() {
-    for (let i = 0; i < enemies.length; i++) {
-        let enemy = enemies[i];
-        if (enemy.hit == false) {
-            enemy.lasers.push({
-                x: enemy.x,
-                y: enemy.y + 15,
-                hit: false
-            })
+    if (gameIsLive == true) {
+
+
+        for (let i = 0; i < enemies.length; i++) {
+            let enemy = enemies[i];
+            if (enemy.hit == false) {
+                enemy.lasers.push({
+                    x: enemy.x,
+                    y: enemy.y + 15,
+                    hit: false
+                })
+
+            }
+
 
         }
-
-
     }
 }
 
@@ -351,10 +348,6 @@ function draw() {
         checkPlayerHit();
         checkGameOver();
         endRound();
-        if (second() - lastFired >= 2) {
-            addEnemyLasers();
-            lastFired = second();
-        }
 
     }
 
