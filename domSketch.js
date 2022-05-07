@@ -14,12 +14,14 @@ let lastFired;
 let livesLeft;
 let fade;
 let interval;
+
 function setup() {
     createCanvas(800, 500).parent("gamecanvas");
     backgroundColor = color(46, 26, 71);
     gameIsLive = false;
     round = 1;
     playerXpos = 370;
+    //add news lasers to the enemies evefry 2 secs if game is live 
     interval = setInterval(addEnemyLasers, 2000);
 
     lasers = [];
@@ -114,7 +116,7 @@ function defineCharacter(x_pos) {
     endShape();
     pop()
 }
-
+// four different possible key presses left right space enter 
 function keyPressed() {
     if (keyCode === LEFT_ARROW) {
         playerXpos = playerXpos >= 30 ? playerXpos - 30 : playerXpos
@@ -137,6 +139,7 @@ function keyPressed() {
 
 }
 
+// when the game is over check for the current high schore in local storage - if the user score is hgiher reset the highscore in local sotrage
 function saveHighScore() {
     let currentHighScore = localStorage.getItem("starShooterScore");
     if (currentHighScore != null) {
@@ -150,6 +153,7 @@ function saveHighScore() {
     }
 }
 
+// gets the high score from local sotrage or sets it to zero if there is none 
 function loadHighScore() {
     let currentHighScore = localStorage.getItem("starShooterScore");
     if (currentHighScore != null) {
@@ -158,7 +162,7 @@ function loadHighScore() {
     return 0
 
 }
-
+// this function adds mroe lasers to the plaers laser array 
 function drawPlayerLasers() {
     for (i = 0; i < lasers.length; i++) {
         if (lasers[i].hit == false) {
@@ -172,13 +176,14 @@ function drawPlayerLasers() {
         lasers[i].y -= 2;
     }
 }
-
+// initalizes the game 
 function startGame() {
     startRound();
     drawPlayerLasers();
     addEnemyLasers();
     drawEnemies();
 }
+//use the round to determine how many enemies there should be 
 
 function startRound() {
     enemiesRemaining = round;
@@ -195,7 +200,7 @@ function startRound() {
         })
     }
 }
-
+// once there are no enemies remaing increase the round then start a new round 
 function endRound() {
     if (enemiesRemaining == 0) {
         round += 1;
@@ -203,7 +208,7 @@ function endRound() {
 
     }
 }
-
+// loop through enmeis array to acutally draw the enemy on the canvas 
 function drawEnemies() {
     for (i = 0; i < enemies.length; i++) {
         if (enemies[i].hit == false) {
@@ -239,8 +244,9 @@ function drawEnemies() {
         }
     }
 }
-
+//This function checks if the player's laser has hit an enemy 
 function checkEnemiesHit() {
+    //first get an array of all the reaming enemies and remain lasers 
     const unhitEnemies = enemies.filter(function (enemy) {
         return enemy.hit == false
     })
@@ -256,6 +262,7 @@ function checkEnemiesHit() {
             const enemyRight = enemy.x + 15
             const enemyTop = enemy.y - 15
             const enemyBottom = enemy.y + 15
+            // check if the positon of the laser is in range of the enemy positon 
             if ((laser.x > enemyLeft && laser.x < enemyRight) && (laserTop > enemyTop && laserTop < enemyBottom)) {
                 enemy.hit = true
                 laser.hit = true
@@ -272,7 +279,7 @@ function checkEnemiesHit() {
 
 
 }
-
+// check if an enemy laser is in range with the player positon 
 function checkPlayerHit() {
     for (i = 0; i < enemies.length; i++) {
         let enemy = enemies[i];
@@ -290,6 +297,7 @@ function checkPlayerHit() {
 
 function checkGameOver() {
     if (livesLeft < 1) {
+        //gradually fade in the game over text
         if (fade < 255) {
             push()
             textSize(60);
@@ -297,7 +305,7 @@ function checkGameOver() {
             text("GAME OVER", 200, 200);
             pop()
             fade += 10
-        } else {
+        } else {//once the text is all the way fade in then we know the game is over 
             push()
             textSize(60);
             fill(255, 0, 0, fade);
@@ -355,13 +363,3 @@ function draw() {
 
 
 
-
-// Javscript not on canvas 
-
-
-// add sound effects 
-
-// add High Score
-// Display prompt for initals for aftergame over 
-// When the game loads grab the high scores form local storage 
-// Show the hgighest score
